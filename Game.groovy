@@ -13,8 +13,7 @@ class Game {
 	}
 	public static void main(String[] args) {
 		def g = new Game()
-		g.play()
-		
+		g.play()		
 	}
 	private void persistBadMoves() {
 		new ObjectOutputStream (new FileOutputStream(FILE_NAME)).withStream { 
@@ -31,7 +30,50 @@ class Game {
 			badMoves = new HashSet()
 		}
 	}
-	private boolean getHumanMove() {
+	
+	// ML
+	private boolean getMusketeerMove() {
+		// based on code from tictactoe getHumanMove()
+    
+		message ("Choose a musketeer to move: [1, 2, 3]")
+		def m = getMusketeer()
+		if ((m < 1) || (m > 3))
+		  return false
+		message ("Choose a direction: [N, S, E, W]")
+		def d = getDirection()
+		
+		// not sure if this will work ...
+		// cloning the current board position is something that works
+		// in tictactoe, not sure if it applies to our game?
+		Position newPos = curPos.clone()
+		// moveMusketeer instead of setPiece ...
+		def success
+		success = newPos.moveMusketeer(m, d)
+		// TODO: save bad moves to the bad moves file?
+    if (success) {
+  		curPos = newPos
+  	}
+		return success
+    //	
+	}
+	
+	// ML - based on getHumanMove and getMusketeerMove
+	private boolean getRichelieuMove() {
+
+	  message ("Choose one of Richelieu's men, by x,y position (e.g. 0,1)")
+	  def x = getTextConsoleMove() 
+		message ("Choose a direction: [N, S, E, W]")
+		def d = getDirection()
+	  Position newPos = curPos.clone()
+	  def success
+	  success = newPos.moveRichelieu(x, d)
+	  if (success) {
+	    curPos = newPos
+	  }
+	  return success
+	}
+	
+	private boolean getHumanMove() {		
 		def x = getTextConsoleMove()
 		if (!curPos.isEmpty(x)) 
 			return false
@@ -59,16 +101,25 @@ class Game {
 	
 	public play () {
 		dePersistBadMoves()
+		// ML
+		updateBoard()
+		//
 		while (curPos.winner() < 1) { 
 			boolean moveLegal = false
 			while (!moveLegal) {
-				moveLegal = getHumanMove()
-				if (!moveLegal)
+				// ML
+				//moveLegal = getHumanMove()
+				moveLegal = getMusketeerMove()
+				if (!moveLegal) {
 					message ( "Illegal Move. Try again...")
+					updateBoard()
+			  }
 			}
 			updateBoard()
+			
 			if (curPos.winner() < 1) {
-				makeComputerMove()
+				//makeComputerMove()
+				getRichelieuMove()
 				updateBoard()
 			}
 		}
@@ -84,6 +135,20 @@ class Game {
 		def fields = move.split(",")
 		return Integer.parseInt(fields[0])+ Integer.parseInt(fields[1])*5
 	}
+	// ML
+	private int getMusketeer() {
+	  def musk
+		BufferedReader br = new BufferedReader( new InputStreamReader (System.in))
+		musk = br.readLine()
+		return Integer.parseInt(musk)	  
+	}
+	// ML
+	private char getDirection() {
+	  def d
+		BufferedReader br = new BufferedReader( new InputStreamReader (System.in))
+		d = br.readLine()
+		return d	  	  
+	} 
 	public void message(String s) {
 		println s
 	}
